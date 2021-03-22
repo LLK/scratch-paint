@@ -195,15 +195,11 @@ class PaperCanvas extends React.Component {
     }
     importSvg (svg, rotationCenterX, rotationCenterY) {
         const paperCanvas = this;
-        // Pre-process SVG to prevent parsing errors (discussion from #213)
-        // 1. Remove svg: namespace on elements.
-        svg = svg.split(/<\s*svg:/).join('<');
-        svg = svg.split(/<\/\s*svg:/).join('</');
-        // 2. Add root svg namespace if it does not exist.
-        const svgAttrs = svg.match(/<svg [^>]*>/);
-        if (svgAttrs && svgAttrs[0].indexOf('xmlns=') === -1) {
-            svg = svg.replace(
-                '<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        if (this.props.fixupSvgStringFn) {
+            // Pre-process SVG to prevent parsing errors (discussion from #213)
+            svg = this.props.fixupSvgStringFn(svg);
+        } else {
+            log.error('Some SVGs may crash the paint editor if fixupSvgStringFn prop is not set on PaintEditor.');
         }
 
         // Get the origin which the viewBox is defined relative to. During import, Paper will translate
@@ -353,6 +349,7 @@ PaperCanvas.propTypes = {
     clearSelectedItems: PropTypes.func.isRequired,
     clearUndo: PropTypes.func.isRequired,
     cursor: PropTypes.string,
+    fixupSvgStringFn: PropTypes.func,
     format: PropTypes.oneOf(Object.keys(Formats)),
     image: PropTypes.oneOfType([
         PropTypes.string,

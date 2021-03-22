@@ -310,6 +310,7 @@ class PaintEditor extends React.Component {
                 canUndo={this.props.shouldShowUndo}
                 canvas={this.state.canvas}
                 colorInfo={this.state.colorInfo}
+                fixupSvgStringFn={this.props.fixupSvgStringFn}
                 format={this.props.format}
                 image={this.props.image}
                 imageFormat={this.props.imageFormat}
@@ -341,6 +342,7 @@ PaintEditor.propTypes = {
     changeColorToEyeDropper: PropTypes.func,
     changeMode: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
+    fixupSvgStringFn: PropTypes.func,
     format: PropTypes.oneOf(Object.keys(Formats)), // Internal, up-to-date data format
     fontInlineFn: PropTypes.func,
     handleSwitchToBitmap: PropTypes.func.isRequired,
