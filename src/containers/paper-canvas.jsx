@@ -7,7 +7,7 @@ import Formats from '../lib/format';
 import log from '../log/log';
 
 import {performSnapshot} from '../helper/undo';
-import {undoSnapshot, clearUndoState} from '../reducers/undo';
+import {undoSnapshot, clearUndoState, changeImageId} from '../reducers/undo';
 import {isGroup, ungroupItems} from '../helper/group';
 import {clearRaster, convertBackgroundGuideLayer, getRaster, setupLayers} from '../helper/layer';
 import {clearSelectedItems} from '../reducers/selected-items';
@@ -67,10 +67,17 @@ class PaperCanvas extends React.Component {
             this.props.imageFormat, this.props.image, this.props.rotationCenterX, this.props.rotationCenterY);
     }
     componentWillReceiveProps (newProps) {
-        if (this.props.imageId !== newProps.imageId) {
+        if (this.props.currentImageId !== newProps.imageId) {
+            /*
+            * It's possible for scratch-paint to be unmounted when e.g. making a new project.
+            * ScratchPaintReducer keeps its Undo data when unmounted, so when it's mounted again
+            * this.props.imageId will be newProps.imageId, causing Undo data to not clear.
+            * However, currentImageId is kept in such circumstances, and it's equal to the imageId of
+            * the last costume selected. (See also: LLK/scratch-desktop#105)
+            */
             this.switchCostume(newProps.imageFormat, newProps.image,
                 newProps.rotationCenterX, newProps.rotationCenterY,
-                this.props.zoomLevelId, newProps.zoomLevelId);
+                this.props.zoomLevelId, newProps.zoomLevelId, newProps.imageId);
         }
         if (this.props.format !== newProps.format) {
             this.recalibrateSize();
@@ -96,7 +103,7 @@ class PaperCanvas extends React.Component {
             this.queuedImageToLoad = null;
         }
     }
-    switchCostume (format, image, rotationCenterX, rotationCenterY, oldZoomLevelId, newZoomLevelId) {
+    switchCostume (format, image, rotationCenterX, rotationCenterY, oldZoomLevelId, newZoomLevelId, newImageId) {
         if (oldZoomLevelId && oldZoomLevelId !== newZoomLevelId) {
             this.props.saveZoomLevel();
         }
@@ -121,6 +128,7 @@ class PaperCanvas extends React.Component {
         this.props.clearSelectedItems();
         this.props.clearHoveredItem();
         this.props.clearPasteOffset();
+        this.props.changeImageId(newImageId);
         this.importImage(format, image, rotationCenterX, rotationCenterY);
     }
     importImage (format, image, rotationCenterX, rotationCenterY) {
@@ -353,6 +361,7 @@ PaperCanvas.propTypes = {
     clearPasteOffset: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
     clearUndo: PropTypes.func.isRequired,
+    currentImageId: PropTypes.string,
     cursor: PropTypes.string,
     format: PropTypes.oneOf(Object.keys(Formats)),
     image: PropTypes.oneOfType([
@@ -360,11 +369,12 @@ PaperCanvas.propTypes = {
         PropTypes.instanceOf(HTMLImageElement)
     ]),
     imageFormat: PropTypes.string, // The incoming image's data format, used during import. The user could switch this.
-    imageId: PropTypes.string,
+    imageId: PropTypes.string, // eslint-disable-line react/no-unused-prop-types
     rotationCenterX: PropTypes.number,
     rotationCenterY: PropTypes.number,
     saveZoomLevel: PropTypes.func.isRequired,
     setZoomLevelId: PropTypes.func.isRequired,
+    changeImageId: PropTypes.func.isRequired,
     undoSnapshot: PropTypes.func.isRequired,
     updateViewBounds: PropTypes.func.isRequired,
     zoomLevelId: PropTypes.string,
@@ -376,6 +386,7 @@ const mapStateToProps = state => ({
     mode: state.scratchPaint.mode,
     cursor: state.scratchPaint.cursor,
     format: state.scratchPaint.format,
+    currentImageId: state.scratchPaint.undo.imageId,
     zoomLevels: state.scratchPaint.zoomLevels
 });
 const mapDispatchToProps = dispatch => ({
@@ -402,6 +413,9 @@ const mapDispatchToProps = dispatch => ({
     },
     setZoomLevelId: zoomLevelId => {
         dispatch(setZoomLevelId(zoomLevelId));
+    },
+    changeImageId: imageId => {
+        dispatch(changeImageId(imageId));
     },
     updateViewBounds: matrix => {
         dispatch(updateViewBounds(matrix));
