@@ -86,7 +86,7 @@
     "react-style-proptype": "3.2.2",
     "react-test-renderer": "^16.0.0",
     "react-tooltip": "3.8.4",
-    "redux": "3.7.2",
+    "redux": "4.1.0",
     "redux-mock-store": "^1.2.3",
     "redux-throttle": "0.1.1",
     "regenerator-runtime": "^0.13.3",
