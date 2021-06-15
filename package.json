@@ -90,7 +90,7 @@
     "redux-mock-store": "^1.2.3",
     "redux-throttle": "0.1.1",
     "regenerator-runtime": "^0.13.3",
-    "rimraf": "^2.6.1",
+    "rimraf": "^3.0.2",
     "scratch-l10n": "3.12.20210614210413",
     "scratch-render-fonts": "^1.0.0-prerelease.20210401210003",
     "style-loader": "^1.0.0",
