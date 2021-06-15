@@ -40,12 +40,13 @@ class ScaleTool {
         this.active = true;
 
         const index = hitResult.item.data.index;
-        this.pivot = boundsPath.bounds[this._getOpposingRectCornerNameByIndex(index)].clone();
-        this.origPivot = boundsPath.bounds[this._getOpposingRectCornerNameByIndex(index)].clone();
-        this.corner = boundsPath.bounds[this._getRectCornerNameByIndex(index)].clone();
+        const bounds = boundsPath.selectionRect.bounds;
+        this.pivot = bounds[this._getOpposingRectCornerNameByIndex(index)].clone();
+        this.origPivot = bounds[this._getOpposingRectCornerNameByIndex(index)].clone();
+        this.corner = bounds[this._getRectCornerNameByIndex(index)].clone();
         this.selectionAnchor = boundsPath.selectionAnchor;
         this.origSize = this.corner.subtract(this.pivot);
-        this.origCenter = boundsPath.bounds.center;
+        this.origCenter = bounds.center;
         this.isCorner = this._isCorner(index);
         this.centered = false;
         this.lastSx = 1;

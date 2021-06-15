@@ -211,6 +211,7 @@ class BoundingBoxTool {
             this.boundsRect.curves[2].divideAtTime(0.5);
             this.boundsRect.curves[4].divideAtTime(0.5);
             this.boundsRect.curves[6].divideAtTime(0.5);
+            this.boundsPath.selectionRect = this.boundsRect;
             this.boundsPath.addChild(this.boundsRect);
 
             const vRect = new paper.Path.Rectangle({
@@ -298,7 +299,8 @@ class BoundingBoxTool {
                 rotHandle.parent = getGuideLayer();
                 this.boundsRotHandles[index] = rotHandle;
             }
-
+            if (rect.height < 1e-8 && index !== 1 && index !== 5) continue;
+            if (rect.width < 1e-8 && index !== 3 && index !== 7) continue;
             this.boundsScaleHandles[index] = boundsScaleHandle.clone();
             this.boundsScaleHandles[index].position = segment.point;
             for (const child of this.boundsScaleHandles[index].children) {
