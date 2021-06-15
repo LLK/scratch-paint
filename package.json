@@ -84,7 +84,7 @@
     "react-redux": "5.1.0",
     "react-responsive": "4.1.0",
     "react-style-proptype": "3.2.2",
-    "react-test-renderer": "^16.0.0",
+    "react-test-renderer": "^17.0.2",
     "react-tooltip": "3.8.4",
     "redux": "3.7.2",
     "redux-mock-store": "^1.2.3",
