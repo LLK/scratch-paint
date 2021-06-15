@@ -14,11 +14,16 @@ export default function (Input) {
             bindAll(this, [
                 'handleChange',
                 'handleKeyPress',
-                'handleFlush'
+                'handleFlush',
+                'handleFocus'
             ]);
             this.state = {
                 value: null
             };
+
+            // Track whether the input is currently focused.
+            // This is a class variable because it doesn't need to trigger re-renders
+            this.focused = false;
         }
         handleKeyPress (e) {
             if (e.key === 'Enter') {
@@ -28,6 +33,11 @@ export default function (Input) {
         }
         handleFlush () {
             this.setState({value: null});
+            this.focused = false;
+        }
+        handleFocus (e) {
+            this.setState({value: e.target.value});
+            this.focused = true;
         }
         handleChange (e) {
             const isNumeric = typeof this.props.value === 'number';
@@ -42,7 +52,10 @@ export default function (Input) {
                 }
                 this.props.onSubmit(val);
             }
-            this.setState({value: e.target.value});
+            // In Firefox, clicking the arrow buttons on a number input changes its value without focusing it.
+            // Make sure that we only set this.state.value (which overrides this.props.value) if the input is actually
+            // focused.
+            if (this.focused) this.setState({value: e.target.value});
         }
         render () {
             const liveValue = this.state.value === null ? this.props.value : this.state.value;
@@ -51,6 +64,7 @@ export default function (Input) {
                     {...this.props}
                     value={liveValue}
                     onBlur={this.handleFlush}
+                    onFocus={this.handleFocus}
                     onChange={this.handleChange}
                     onKeyPress={this.handleKeyPress}
                 />
