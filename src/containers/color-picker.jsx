@@ -58,7 +58,7 @@ class ColorPicker extends React.Component {
             brightness: hsv[2]
         };
     }
-    componentWillReceiveProps (newProps) {
+    UNSAFE_componentWillReceiveProps (newProps) {
         const color = newProps.colorIndex === 0 ? this.props.color : this.props.color2;
         const newColor = newProps.colorIndex === 0 ? newProps.color : newProps.color2;
         const colorSetByEyedropper = this.props.isEyeDropping && color !== newColor;

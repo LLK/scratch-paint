@@ -24,7 +24,7 @@ class BitEraserMode extends React.Component {
             this.activateTool(this.props);
         }
     }
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (this.tool && nextProps.bitEraserSize !== this.props.bitEraserSize) {
             this.tool.setBrushSize(nextProps.bitEraserSize);
         }

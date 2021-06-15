@@ -24,7 +24,7 @@ class EraserMode extends React.Component {
             this.activateTool();
         }
     }
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (nextProps.isEraserModeActive && !this.props.isEraserModeActive) {
             this.activateTool();
         } else if (!nextProps.isEraserModeActive && this.props.isEraserModeActive) {

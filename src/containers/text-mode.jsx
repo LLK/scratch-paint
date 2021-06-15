@@ -34,7 +34,7 @@ class TextMode extends React.Component {
             this.activateTool(this.props);
         }
     }
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (this.tool) {
             if (nextProps.colorState !== this.props.colorState) {
                 this.tool.setColorState(nextProps.colorState);

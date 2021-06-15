@@ -33,7 +33,7 @@ class ScrollableCanvas extends React.Component {
             this.props.canvas.addEventListener('wheel', this.handleWheel);
         }
     }
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (nextProps.canvas) {
             if (this.props.canvas) {
                 this.props.canvas.removeEventListener('wheel', this.handleWheel);

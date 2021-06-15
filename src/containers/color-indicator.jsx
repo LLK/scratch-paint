@@ -30,7 +30,7 @@ const makeColorIndicator = (label, isStroke) => {
             // Flag to track whether an svg-update-worthy change has been made
             this._hasChanged = false;
         }
-        componentWillReceiveProps (newProps) {
+        UNSAFE_componentWillReceiveProps (newProps) {
             const {colorModalVisible, onUpdateImage} = this.props;
             if (colorModalVisible && !newProps.colorModalVisible) {
                 // Submit the new SVG, which also stores a single undo/redo action.
