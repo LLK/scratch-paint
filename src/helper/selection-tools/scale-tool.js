@@ -118,13 +118,19 @@ class ScaleTool {
 
         const signx = sx > 0 ? 1 : -1;
         const signy = sy > 0 ? 1 : -1;
+        sx = Math.abs(sx);
+        sy = Math.abs(sy);
         if (this.isCorner && !event.modifiers.shift) {
-            sx = sy = Math.max(Math.abs(sx), Math.abs(sy));
-            sx *= signx;
-            sy *= signy;
+            sx = sy = Math.max(sx, sy);
         }
-        sx = signx * Math.max(Math.abs(sx), MIN_SCALE_FACTOR);
-        sy = signy * Math.max(Math.abs(sy), MIN_SCALE_FACTOR);
+        if (event.modifiers.control) {
+            sx = Math.max(Math.round(sx), 1);
+            sy = Math.max(Math.round(sy), 1);
+        }
+        sx = Math.max(sx, MIN_SCALE_FACTOR);
+        sy = Math.max(sy, MIN_SCALE_FACTOR);
+        sx *= signx;
+        sy *= signy;
         this.itemGroup.scale(sx / this.lastSx, sy / this.lastSy, this.pivot);
         if (this.selectionAnchor) {
             this.selectionAnchor.scale(this.lastSx / sx, this.lastSy / sy);
