@@ -1,6 +1,6 @@
 {
   "name": "scratch-paint",
-  "version": "0.2.0",
+  "version": "0.0.0-development",
   "description": "Graphical User Interface for the Scratch 3.0 paint editor, which is used to make and edit sprites for use in projects.",
   "main": "./dist/scratch-paint.js",
   "browser": "./src/index.js",
@@ -14,14 +14,15 @@
     "start": "webpack-dev-server",
     "test": "npm run lint && npm run unit && NODE_ENV=production npm run build",
     "unit": "jest",
-    "watch": "webpack --progress --colors --watch"
+    "watch": "webpack --progress --colors --watch",
+    "semantic-release": "semantic-release"
   },
   "author": "Massachusetts Institute of Technology",
   "license": "BSD-3-Clause",
   "homepage": "https://github.com/LLK/scratch-paint#readme",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/LLK/scratch-paint.git"
+    "url": "https://github.com/LLK/scratch-paint.git"
   },
   "dependencies": {
     "@scratch/paper": "0.11.20200728195508",
@@ -93,6 +94,7 @@
     "rimraf": "^2.6.1",
     "scratch-l10n": "3.12.20210614210413",
     "scratch-render-fonts": "^1.0.0-prerelease.20210401210003",
+    "semantic-release": "^17.4.3",
     "style-loader": "^1.0.0",
     "svg-url-loader": "^3.0.0",
     "tap": "^14.4.3",
