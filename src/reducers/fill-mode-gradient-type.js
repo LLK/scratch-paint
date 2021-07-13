@@ -4,7 +4,7 @@ import GradientTypes from '../lib/gradient-types';
 import log from '../log/log';
 import {CHANGE_FILL_GRADIENT_TYPE} from './fill-style';
 
-const initialState = null;
+const initialState = GradientTypes.SOLID;
 
 const reducer = function (state, action) {
     if (typeof state === 'undefined') state = initialState;
@@ -20,17 +20,6 @@ const reducer = function (state, action) {
     }
 };
 
-// Action creators ==================================
-// Use this for user-initiated gradient type selections only.
-// See reducers/fill-style.js for other ways gradient type changes.
-const changeGradientType = function (gradientType) {
-    return {
-        type: CHANGE_FILL_GRADIENT_TYPE,
-        gradientType: gradientType
-    };
-};
-
 export {
-    reducer as default,
-    changeGradientType
+    reducer as default
 };

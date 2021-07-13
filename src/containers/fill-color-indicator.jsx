@@ -1,9 +1,7 @@
 import {connect} from 'react-redux';
 import {defineMessages} from 'react-intl';
 
-import {changeColorIndex} from '../reducers/color-index';
-import {changeFillColor, changeFillColor2} from '../reducers/fill-style';
-import {changeGradientType} from '../reducers/fill-mode-gradient-type';
+import {changeFillColor, changeFillColor2, changeFillColorIndex, changeFillGradientType} from '../reducers/fill-style';
 import {openFillColor, closeFillColor} from '../reducers/modals';
 import {getSelectedLeafItems} from '../helper/selection';
 import {setSelectedItems} from '../reducers/selected-items';
@@ -23,7 +21,7 @@ const messages = defineMessages({
 const FillColorIndicator = makeColorIndicator(messages.label, false);
 
 const mapStateToProps = state => ({
-    colorIndex: state.scratchPaint.fillMode.colorIndex,
+    colorIndex: state.scratchPaint.color.fillColor.activeIndex,
     disabled: state.scratchPaint.mode === Modes.LINE,
     color: state.scratchPaint.color.fillColor.primary,
     color2: state.scratchPaint.color.fillColor.secondary,
@@ -32,14 +30,13 @@ const mapStateToProps = state => ({
     format: state.scratchPaint.format,
     gradientType: state.scratchPaint.color.fillColor.gradientType,
     isEyeDropping: state.scratchPaint.color.eyeDropper.active,
-    mode: state.scratchPaint.mode,
     shouldShowGradientTools: state.scratchPaint.mode in GradientToolsModes,
     textEditTarget: state.scratchPaint.textEditTarget
 });
 
 const mapDispatchToProps = dispatch => ({
     onChangeColorIndex: index => {
-        dispatch(changeColorIndex(index));
+        dispatch(changeFillColorIndex(index));
     },
     onChangeColor: (fillColor, index) => {
         if (index === 0) {
@@ -55,7 +52,7 @@ const mapDispatchToProps = dispatch => ({
         dispatch(closeFillColor());
     },
     onChangeGradientType: gradientType => {
-        dispatch(changeGradientType(gradientType));
+        dispatch(changeFillGradientType(gradientType));
     },
     setSelectedItems: format => {
         dispatch(setSelectedItems(getSelectedLeafItems(), isBitmap(format)));

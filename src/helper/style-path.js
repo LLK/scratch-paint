@@ -9,13 +9,40 @@ import log from '../log/log';
 
 const MIXED = 'scratch-paint/style-path/mixed';
 
-// Check if the item color matches the incoming color. If the item color is a gradient, we assume
-// that the incoming color never matches, since we don't support gradients yet.
-const _colorMatch = function (itemColor, incomingColor) {
-    if (itemColor && itemColor.type === 'gradient') return false;
-    // Either both are null or both are the same color when converted to CSS.
-    return (!itemColor && !incomingColor) ||
-            (itemColor && incomingColor && itemColor.toCSS() === new paper.Color(incomingColor).toCSS());
+const _isBlack = hsbColor => hsbColor.brightness === 0;
+
+const _isWhite = hsbColor => hsbColor.brightness === 100 && hsbColor.saturation === 100;
+
+// Check if two colors, possibly null, are (approximately) equal.
+const colorsEqual = (color1, color2) => {
+    if (color1 === color2) return true;
+    if (!color1 || !color2) return false;
+    if (color1 === MIXED || color2 === MIXED) {
+        return false; // Don't warn if one of the colors is mixed
+    }
+
+    if (!(color1 instanceof paper.Color && color2 instanceof paper.Color)) {
+        log.warn('colorsEqual passed non-Colors');
+        return false;
+    }
+
+    const hsb1 = color1.type === 'hsb' ? color1 : color1.convert('hsb');
+    const hsb2 = color2.type === 'hsb' ? color2 : color2.convert('hsb');
+
+    // Collapse equivalent colors in hsb color space
+    if (_isBlack(hsb1) && _isBlack(hsb2)) return true;
+    if (_isWhite(hsb1) && _isWhite(hsb2)) return true;
+
+    // Colors that are similar enough, as determined by this threshold, will be considered equal.
+    // (in terms of units on the Scratch color scale)
+    const EPSILON = 0.5;
+
+    return (
+        Math.abs(hsb1.hue - hsb2.hue) < EPSILON * (360 / 100) &&
+        Math.abs(hsb1.saturation - hsb2.saturation) < EPSILON / 100 &&
+        Math.abs(hsb1.brightness - hsb2.brightness) < EPSILON / 100 &&
+        Math.abs(hsb1.alpha - hsb2.alpha) < EPSILON
+    );
 };
 
 // Selected items and currently active text edit items respond to color changes.
@@ -36,13 +63,14 @@ const _getColorStateListeners = function (textEditTargetId) {
  * Transparent R, G, B values need to match the other color of the gradient
  * in order to form a smooth gradient, otherwise it fades through black. This
  * function gets the transparent color for a given color string.
- * @param {?string} colorToMatch CSS string of other color of gradient, or null for transparent
- * @return {string} CSS string for matching color of transparent
+ * @param {?paper.Color} colorToMatch Other color of gradient, or null for transparent
+ * @return {paper.Color} Color for matching color of transparent
  */
-const getColorStringForTransparent = function (colorToMatch) {
-    const color = new paper.Color(colorToMatch);
+const getColorForTransparent = function (colorToMatch) {
+    if (colorToMatch === null) return new paper.Color({hue: 0, saturation: 0, brightness: 0, alpha: 0});
+    const color = colorToMatch.clone();
     color.alpha = 0;
-    return color.toCSS();
+    return color;
 };
 
 /**
@@ -65,19 +93,20 @@ const generateSecondaryColor = function (firstColor) {
     }
     // If the color was desaturated, don't do a hue shift, as it would be hard to see anyway.
     if (!desaturated) {
-        color.hue -= 72;
+        // adding 288 and taking the result modulo 360 is equivalent to subtracting 72, and ensures hue is kept positive
+        color.hue = (color.hue + 288) % 360;
     }
     // The returned color will be one of three things:
     // 1. If the color was bright and saturated (e.g. colorful), it will be that color, hue-shifted.
     // 2. If the color was dark and saturated, it will be that color, brightened and hue-shifted.
     // 3. If the color was not saturated, it will be that color, brightened or darkened as needed to contrast most.
-    return color.toCSS(true /* hex */);
+    return color;
 };
 
 /**
  * Convert params to a paper.Color gradient object
- * @param {?string} color1 CSS string, or null for transparent
- * @param {?string} color2 CSS string, or null for transparent
+ * @param {?paper.Color} color1 Primary gradient color, or null for transparent
+ * @param {?paper.Color} color2 Secondary gradient color, or null for transparent
  * @param {GradientType} gradientType gradient type
  * @param {paper.Rectangle} bounds Bounds of the object
  * @param {?paper.Point} [radialCenter] Where the center of a radial gradient should be, if the gradient is radial.
@@ -88,10 +117,10 @@ const generateSecondaryColor = function (firstColor) {
 const createGradientObject = function (color1, color2, gradientType, bounds, radialCenter, minSize) {
     if (gradientType === GradientTypes.SOLID) return color1;
     if (color1 === null) {
-        color1 = getColorStringForTransparent(color2);
+        color1 = getColorForTransparent(color2);
     }
     if (color2 === null) {
-        color2 = getColorStringForTransparent(color1);
+        color2 = getColorForTransparent(color1);
     }
 
     // Force gradients to have a minimum length. If the gradient start and end points are the same or very close
@@ -149,7 +178,7 @@ const createGradientObject = function (color1, color2, gradientType, bounds, rad
 
 /**
  * Called when setting an item's color
- * @param {string} colorString color, css format, or null if completely transparent
+ * @param {paper.Color} color new color, or null if completely transparent
  * @param {number} colorIndex index of color being changed
  * @param {boolean} isSolidGradient True if is solid gradient. Sometimes the item has a gradient but the color
  *     picker is set to a solid gradient. This happens when a mix of colors and gradient types is selected.
@@ -159,7 +188,7 @@ const createGradientObject = function (color1, color2, gradientType, bounds, rad
  * @return {boolean} Whether the color application actually changed visibly.
  */
 const applyColorToSelection = function (
-    colorString,
+    color,
     colorIndex,
     isSolidGradient,
     applyToStroke,
@@ -178,29 +207,29 @@ const applyColorToSelection = function (
         if (isSolidGradient || !itemColor || !itemColor.gradient ||
                 !itemColor.gradient.stops.length === 2) {
             // Applying a solid color
-            if (!_colorMatch(itemColor, colorString)) {
+            if (!colorsEqual(itemColor, color)) {
                 changed = true;
-                if (isPointTextItem(item) && !colorString) {
+                if (isPointTextItem(item) && !color) {
                     // Allows transparent text to be hit
                     item[itemColorProp] = 'rgba(0,0,0,0)';
                 } else {
-                    item[itemColorProp] = colorString;
+                    item[itemColorProp] = color;
                 }
             }
-        } else if (!_colorMatch(itemColor.gradient.stops[colorIndex].color, colorString)) {
+        } else if (!colorsEqual(itemColor.gradient.stops[colorIndex].color, color)) {
             // Changing one color of an existing gradient
             changed = true;
             const otherIndex = colorIndex === 0 ? 1 : 0;
-            if (colorString === null) {
-                colorString = getColorStringForTransparent(itemColor.gradient.stops[otherIndex].color.toCSS());
+            if (color === null) {
+                color = getColorForTransparent(itemColor.gradient.stops[otherIndex].color);
             }
             const colors = [0, 0];
-            colors[colorIndex] = colorString;
+            colors[colorIndex] = color;
             // If the other color is transparent, its RGB values need to be adjusted for the gradient to be smooth
             if (itemColor.gradient.stops[otherIndex].color.alpha === 0) {
-                colors[otherIndex] = getColorStringForTransparent(colorString);
+                colors[otherIndex] = getColorForTransparent(color);
             } else {
-                colors[otherIndex] = itemColor.gradient.stops[otherIndex].color.toCSS();
+                colors[otherIndex] = itemColor.gradient.stops[otherIndex].color;
             }
             // There seems to be a bug where setting colors on stops doesn't always update the view, so set gradient.
             itemColor.gradient = {stops: colors, radial: itemColor.gradient.radial};
@@ -232,8 +261,8 @@ const swapColorsInSelection = function (applyToStroke, textEditTargetId) {
             // Changing one color of an existing gradient
             changed = true;
             const colors = [
-                itemColor.gradient.stops[1].color.toCSS(),
-                itemColor.gradient.stops[0].color.toCSS()
+                itemColor.gradient.stops[1].color,
+                itemColor.gradient.stops[0].color
             ];
             // There seems to be a bug where setting colors on stops doesn't always update the view, so set gradient.
             itemColor.gradient = {stops: colors, radial: itemColor.gradient.radial};
@@ -268,13 +297,13 @@ const applyGradientTypeToSelection = function (gradientType, applyToStroke, text
             itemColor1 = null;
         } else if (!hasGradient) {
             // Solid color
-            itemColor1 = itemColor.toCSS();
+            itemColor1 = itemColor;
         } else if (!itemColor.gradient.stops[0] || itemColor.gradient.stops[0].color.alpha === 0) {
             // Gradient where first color is transparent
             itemColor1 = null;
         } else {
             // Gradient where first color is not transparent
-            itemColor1 = itemColor.gradient.stops[0].color.toCSS();
+            itemColor1 = itemColor.gradient.stops[0].color;
         }
 
         let itemColor2;
@@ -286,7 +315,7 @@ const applyGradientTypeToSelection = function (gradientType, applyToStroke, text
             itemColor2 = null;
         } else {
             // Gradient has 2nd color which is not transparent
-            itemColor2 = itemColor.gradient.stops[1].color.toCSS();
+            itemColor2 = itemColor.gradient.stops[1].color;
         }
 
         if (gradientType === GradientTypes.SOLID) {
@@ -320,10 +349,10 @@ const applyGradientTypeToSelection = function (gradientType, applyToStroke, text
         }
 
         if (itemColor1 === null) {
-            itemColor1 = getColorStringForTransparent(itemColor2);
+            itemColor1 = getColorForTransparent(itemColor2);
         }
         if (itemColor2 === null) {
-            itemColor2 = getColorStringForTransparent(itemColor1);
+            itemColor2 = getColorForTransparent(itemColor1);
         }
 
         let gradientTypeDiffers = false;
@@ -399,10 +428,10 @@ const _colorStateFromGradient = gradient => {
         }
         colorState.primary = gradient.stops[0].color.alpha === 0 ?
             null :
-            gradient.stops[0].color.toCSS();
+            gradient.stops[0].color;
         colorState.secondary = gradient.stops[1].color.alpha === 0 ?
             null :
-            gradient.stops[1].color.toCSS();
+            gradient.stops[1].color;
     } else {
         if (gradient.stops.length < 2) log.warn(`Gradient has ${gradient.stops.length} stop(s)`);
 
@@ -424,10 +453,11 @@ const _colorStateFromGradient = gradient => {
  */
 const getColorsFromSelection = function (selectedItems, bitmapMode) {
     // TODO: DRY out this code
-    let selectionFillColorString;
-    let selectionFillColor2String;
-    let selectionStrokeColorString;
-    let selectionStrokeColor2String;
+    // TODO: Handle cases in which the paper.Color of the selection is an RGB color, and convert to an HSB color
+    let selectionFillColor;
+    let selectionFillColor2;
+    let selectionStrokeColor;
+    let selectionStrokeColor2;
     let selectionStrokeWidth;
     let selectionThickness;
     let selectionFillGradientType;
@@ -439,10 +469,10 @@ const getColorsFromSelection = function (selectedItems, bitmapMode) {
             // Compound path children inherit fill and stroke color from their parent.
             item = item.parent;
         }
-        let itemFillColorString;
-        let itemFillColor2String;
-        let itemStrokeColorString;
-        let itemStrokeColor2String;
+        let itemFillColor;
+        let itemFillColor2;
+        let itemStrokeColor;
+        let itemStrokeColor2;
         let itemFillGradientType = GradientTypes.SOLID;
         let itemStrokeGradientType = GradientTypes.SOLID;
 
@@ -450,30 +480,30 @@ const getColorsFromSelection = function (selectedItems, bitmapMode) {
             if (item.fillColor) {
                 // hack bc text items with null fill can't be detected by fill-hitTest anymore
                 if (isPointTextItem(item) && item.fillColor.alpha === 0) {
-                    itemFillColorString = null;
+                    itemFillColor = null;
                 } else if (item.fillColor.type === 'gradient') {
                     const {primary, secondary, gradientType} = _colorStateFromGradient(item.fillColor.gradient);
-                    itemFillColorString = primary;
-                    itemFillColor2String = secondary;
+                    itemFillColor = primary;
+                    itemFillColor2 = secondary;
                     itemFillGradientType = gradientType;
                 } else {
-                    itemFillColorString = item.fillColor.alpha === 0 ?
+                    itemFillColor = item.fillColor.alpha === 0 ?
                         null :
-                        item.fillColor.toCSS();
-                    itemFillColor2String = null;
+                        item.fillColor;
+                    itemFillColor2 = null;
                 }
             }
             if (item.strokeColor) {
                 if (item.strokeColor.type === 'gradient') {
                     const {primary, secondary, gradientType} = _colorStateFromGradient(item.strokeColor.gradient);
 
-                    let strokeColorString = primary;
-                    const strokeColor2String = secondary;
+                    let strokeColor = primary;
+                    const strokecolor2 = secondary;
                     let strokeGradientType = gradientType;
 
                     // If the item's stroke width is 0, pretend the stroke color is null
                     if (!item.strokeWidth) {
-                        strokeColorString = null;
+                        strokeColor = null;
                         // Hide the second color. This way if you choose a second color, remove
                         // the gradient, and re-add it, your second color selection is preserved.
                         strokeGradientType = GradientTypes.SOLID;
@@ -481,67 +511,68 @@ const getColorsFromSelection = function (selectedItems, bitmapMode) {
 
                     // Stroke color is fill color in bitmap
                     if (bitmapMode) {
-                        itemFillColorString = strokeColorString;
-                        itemFillColor2String = strokeColor2String;
+                        itemFillColor = strokeColor;
+                        itemFillColor2 = strokecolor2;
                         itemFillGradientType = strokeGradientType;
                     } else {
-                        itemStrokeColorString = strokeColorString;
-                        itemStrokeColor2String = strokeColor2String;
+                        itemStrokeColor = strokeColor;
+                        itemStrokeColor2 = strokecolor2;
                         itemStrokeGradientType = strokeGradientType;
                     }
                 } else {
-                    const strokeColorString = item.strokeColor.alpha === 0 || !item.strokeWidth ?
+                    const strokeColor = item.strokeColor.alpha === 0 || !item.strokeWidth ?
                         null :
-                        item.strokeColor.toCSS();
+                        item.strokeColor;
 
                     // Stroke color is fill color in bitmap
                     if (bitmapMode) {
-                        itemFillColorString = strokeColorString;
+                        itemFillColor = strokeColor;
                     } else {
-                        itemStrokeColorString = strokeColorString;
+                        itemStrokeColor = strokeColor;
                     }
                 }
             } else {
-                itemStrokeColorString = null;
-                itemStrokeColor2String = null;
+                itemStrokeColor = null;
+                itemStrokeColor2 = null;
             }
             // check every style against the first of the items
             if (firstChild) {
                 firstChild = false;
-                selectionFillColorString = itemFillColorString;
-                selectionFillColor2String = itemFillColor2String;
-                selectionStrokeColorString = itemStrokeColorString;
-                selectionStrokeColor2String = itemStrokeColor2String;
+                selectionFillColor = itemFillColor;
+                selectionFillColor2 = itemFillColor2;
+                selectionStrokeColor = itemStrokeColor;
+                selectionStrokeColor2 = itemStrokeColor2;
                 selectionFillGradientType = itemFillGradientType;
                 selectionStrokeGradientType = itemStrokeGradientType;
-                selectionStrokeWidth = itemStrokeColorString || itemStrokeColor2String ? item.strokeWidth : 0;
+                selectionStrokeWidth = itemStrokeColor || itemStrokeColor2 ? item.strokeWidth : 0;
                 if (item.strokeWidth && item.data && item.data.zoomLevel) {
                     selectionThickness = item.strokeWidth / item.data.zoomLevel;
                 }
             }
-            if (itemFillColorString !== selectionFillColorString) {
-                selectionFillColorString = MIXED;
+
+            if (!colorsEqual(itemFillColor, selectionFillColor)) {
+                selectionFillColor = MIXED;
             }
-            if (itemFillColor2String !== selectionFillColor2String) {
-                selectionFillColor2String = MIXED;
+            if (!colorsEqual(itemFillColor2, selectionFillColor2)) {
+                selectionFillColor2 = MIXED;
             }
             if (itemFillGradientType !== selectionFillGradientType) {
                 selectionFillGradientType = GradientTypes.SOLID;
-                selectionFillColorString = MIXED;
-                selectionFillColor2String = MIXED;
+                selectionFillColor = MIXED;
+                selectionFillColor2 = MIXED;
             }
             if (itemStrokeGradientType !== selectionStrokeGradientType) {
                 selectionStrokeGradientType = GradientTypes.SOLID;
-                selectionStrokeColorString = MIXED;
-                selectionStrokeColor2String = MIXED;
+                selectionStrokeColor = MIXED;
+                selectionStrokeColor2 = MIXED;
             }
-            if (itemStrokeColorString !== selectionStrokeColorString) {
-                selectionStrokeColorString = MIXED;
+            if (itemStrokeColor !== selectionStrokeColor) {
+                selectionStrokeColor = MIXED;
             }
-            if (itemStrokeColor2String !== selectionStrokeColor2String) {
-                selectionStrokeColor2String = MIXED;
+            if (itemStrokeColor2 !== selectionStrokeColor2) {
+                selectionStrokeColor2 = MIXED;
             }
-            const itemStrokeWidth = itemStrokeColorString || itemStrokeColor2String ? item.strokeWidth : 0;
+            const itemStrokeWidth = itemStrokeColor || itemStrokeColor2 ? item.strokeWidth : 0;
             if (selectionStrokeWidth !== itemStrokeWidth) {
                 selectionStrokeWidth = null;
             }
@@ -574,18 +605,18 @@ const getColorsFromSelection = function (selectedItems, bitmapMode) {
     }
     if (bitmapMode) {
         return {
-            fillColor: selectionFillColorString ? selectionFillColorString : null,
-            fillColor2: selectionFillColor2String ? selectionFillColor2String : null,
+            fillColor: selectionFillColor ? selectionFillColor : null,
+            fillColor2: selectionFillColor2 ? selectionFillColor2 : null,
             fillGradientType: selectionFillGradientType,
             thickness: selectionThickness
         };
     }
     return {
-        fillColor: selectionFillColorString ? selectionFillColorString : null,
-        fillColor2: selectionFillColor2String ? selectionFillColor2String : null,
+        fillColor: selectionFillColor ? selectionFillColor : null,
+        fillColor2: selectionFillColor2 ? selectionFillColor2 : null,
         fillGradientType: selectionFillGradientType,
-        strokeColor: selectionStrokeColorString ? selectionStrokeColorString : null,
-        strokeColor2: selectionStrokeColor2String ? selectionStrokeColor2String : null,
+        strokeColor: selectionStrokeColor ? selectionStrokeColor : null,
+        strokeColor2: selectionStrokeColor2 ? selectionStrokeColor2 : null,
         strokeGradientType: selectionStrokeGradientType,
         strokeWidth: selectionStrokeWidth || (selectionStrokeWidth === null) ? selectionStrokeWidth : 0
     };
@@ -641,6 +672,7 @@ export {
     applyColorToSelection,
     applyGradientTypeToSelection,
     applyStrokeWidthToSelection,
+    colorsEqual,
     createGradientObject,
     getColorsFromSelection,
     generateSecondaryColor,

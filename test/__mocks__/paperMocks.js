@@ -8,12 +8,8 @@
  */
 const mockPaperRootItem = function (options) {
     return {
-        strokeColor: {toCSS: function () {
-            return options.strokeColor;
-        }},
-        fillColor: {toCSS: function () {
-            return options.fillColor;
-        }},
+        strokeColor: options.strokeColor,
+        fillColor: options.fillColor,
         strokeWidth: options.strokeWidth,
         parent: {className: 'Layer'},
         data: {}

@@ -4,6 +4,7 @@
 :global(.Popover-body) {
     background: white;
     border: 1px solid #ddd;
+    width: 240px;
     padding: 4px;
     border-radius: 4px;
     padding: 4px;
@@ -15,14 +16,11 @@
     stroke: #ddd;
 }
 
-.clickable {
-    cursor: pointer;
-}
-
-.swatch-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+.color-swatches-container {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    margin-left: 8px;
+    margin-right: 8px;
 }
 
 .row-header {
@@ -44,6 +42,10 @@
     font-weight: bold;
 }
 
+.clickable {
+    cursor: pointer;
+}
+
 .divider {
     border-top: 1px solid #ddd;
     margin: 8px;
@@ -54,20 +56,6 @@
     margin-right: 8px;
 }
 
-.swatches {
-    margin: 8px;
-}
-
-.swatch {
-    width: 1.5rem;
-    height: 1.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: content-box;
-    display: flex;
-    align-items: center;
-}
-
 .large-swatch-icon {
     width: 1.75rem;
     margin: auto;
@@ -76,16 +64,14 @@
 .large-swatch {
     width: 2rem;
     height: 2rem;
-}
-
-.active-swatch {
-    border: 1px solid #4C97FF;
-    box-shadow: 0px 0px 0px 3px hsla(215, 100%, 65%, 0.2);
-}
-
-.swatch-icon {
-    width: 1.5rem;
-    height: 1.5rem;
+    user-select: none;
+    border: 1px solid white;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.2);
+    border-radius: 5px;
+    box-sizing: content-box;
+    display: flex;
+    align-items: center;
+    margin: 1px;
 }
 
 .inactive-gradient {

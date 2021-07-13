@@ -216,6 +216,7 @@ const _makeBackgroundPaper = function (width, height, color, opacity) {
     mask.scale(1 / CHECKERBOARD_SIZE);
     const vGroup = new paper.Group([vRect, vPath, mask]);
     mask.clipMask = true;
+
     return vGroup;
 };
 

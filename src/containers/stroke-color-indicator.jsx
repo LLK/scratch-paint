@@ -1,8 +1,8 @@
 import {connect} from 'react-redux';
 import {defineMessages} from 'react-intl';
 
-import {changeColorIndex} from '../reducers/color-index';
-import {changeStrokeColor, changeStrokeColor2, changeStrokeGradientType} from '../reducers/stroke-style';
+import {changeStrokeColor, changeStrokeColor2, changeStrokeColorIndex,
+    changeStrokeGradientType} from '../reducers/stroke-style';
 import {changeStrokeWidth} from '../reducers/stroke-width';
 import {openStrokeColor, closeStrokeColor} from '../reducers/modals';
 import {getSelectedLeafItems} from '../helper/selection';
@@ -23,7 +23,7 @@ const messages = defineMessages({
 const StrokeColorIndicator = makeColorIndicator(messages.label, true);
 
 const mapStateToProps = state => ({
-    colorIndex: state.scratchPaint.fillMode.colorIndex,
+    colorIndex: state.scratchPaint.color.strokeColor.activeIndex,
     disabled: state.scratchPaint.mode === Modes.BRUSH ||
         state.scratchPaint.mode === Modes.TEXT ||
         state.scratchPaint.mode === Modes.FILL,
@@ -41,7 +41,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({
     onChangeColorIndex: index => {
-        dispatch(changeColorIndex(index));
+        dispatch(changeStrokeColorIndex(index));
     },
     onChangeColor: (strokeColor, index) => {
         if (index === 0) {

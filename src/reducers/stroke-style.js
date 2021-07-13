@@ -1,10 +1,12 @@
 import makeColorStyleReducer from '../lib/make-color-style-reducer';
+import paper from '@scratch/paper';
 
 const CHANGE_STROKE_COLOR = 'scratch-paint/stroke-style/CHANGE_STROKE_COLOR';
 const CHANGE_STROKE_COLOR_2 = 'scratch-paint/stroke-style/CHANGE_STROKE_COLOR_2';
 const CHANGE_STROKE_GRADIENT_TYPE = 'scratch-paint/stroke-style/CHANGE_STROKE_GRADIENT_TYPE';
 const CLEAR_STROKE_GRADIENT = 'scratch-paint/stroke-style/CLEAR_STROKE_GRADIENT';
-const DEFAULT_COLOR = '#000000';
+const CHANGE_STROKE_COLOR_INDEX = 'scratch-paint/stroke-style/CHANGE_STROKE_COLOR_INDEX';
+const DEFAULT_COLOR = new paper.Color({hue: 0, saturation: 0, brightness: 0});
 
 import {CHANGE_STROKE_WIDTH} from './stroke-width';
 
@@ -13,6 +15,7 @@ const reducer = makeColorStyleReducer({
     changeSecondaryColorAction: CHANGE_STROKE_COLOR_2,
     changeGradientTypeAction: CHANGE_STROKE_GRADIENT_TYPE,
     clearGradientAction: CLEAR_STROKE_GRADIENT,
+    changeIndexAction: CHANGE_STROKE_COLOR_INDEX,
     defaultColor: DEFAULT_COLOR,
     selectionPrimaryColorKey: 'strokeColor',
     selectionSecondaryColorKey: 'strokeColor2',
@@ -63,11 +66,19 @@ const clearStrokeGradient = function () {
     };
 };
 
+const changeStrokeColorIndex = function (index) {
+    return {
+        type: CHANGE_STROKE_COLOR_INDEX,
+        index: index
+    };
+};
+
 export {
     strokeReducer as default,
     changeStrokeColor,
     changeStrokeColor2,
     changeStrokeGradientType,
+    changeStrokeColorIndex,
     clearStrokeGradient,
     DEFAULT_COLOR,
     CHANGE_STROKE_GRADIENT_TYPE

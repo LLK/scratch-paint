@@ -22,7 +22,7 @@ class LineMode extends React.Component {
         return 6;
     }
     static get DEFAULT_COLOR () {
-        return '#000000';
+        return new paper.Color({hue: 0, saturation: 0, brightness: 0});
     }
     constructor (props) {
         super(props);

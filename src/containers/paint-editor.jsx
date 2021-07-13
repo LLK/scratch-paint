@@ -10,6 +10,8 @@ import SelectionHOC from '../hocs/selection-hoc.jsx';
 import UndoHOC from '../hocs/undo-hoc.jsx';
 import UpdateImageHOC from '../hocs/update-image-hoc.jsx';
 
+import {changeFillColor, clearFillGradient} from '../reducers/fill-style';
+import {changeStrokeColor, clearStrokeGradient} from '../reducers/stroke-style';
 import {changeMode} from '../reducers/modes';
 import {changeFormat} from '../reducers/format';
 import {clearSelectedItems, setSelectedItems} from '../reducers/selected-items';
@@ -22,6 +24,7 @@ import {getSelectedLeafItems} from '../helper/selection';
 import {convertToBitmap, convertToVector} from '../helper/bitmap';
 import {resetZoom, zoomOnSelection, OUTERMOST_ZOOM_LEVEL} from '../helper/view';
 import EyeDropperTool from '../helper/tools/eye-dropper';
+import {applyColorToSelection} from '../helper/style-path';
 
 import Modes, {BitmapModes, VectorModes} from '../lib/modes';
 import Formats, {isBitmap, isVector} from '../lib/format';
@@ -85,7 +88,8 @@ class PaintEditor extends React.Component {
             'handleSetSelectedItems',
             'handleZoomIn',
             'handleZoomOut',
-            'handleZoomReset'
+            'handleZoomReset',
+            'handleChangeColor'
         ]);
         this.state = {
             canvas: null,
@@ -232,6 +236,28 @@ class PaintEditor extends React.Component {
     handleSetSelectedItems () {
         this.props.setSelectedItems(this.props.format);
     }
+    handleChangeColor (newColor) {
+        const isStroke = this.props.mode === Modes.LINE;
+        let hasChanged = false;
+        if (isStroke) {
+            hasChanged = applyColorToSelection(
+                newColor,
+                this.props.strokeColorIndex,
+                true /* isSolidGradient */,
+                true /* applyToStroke */,
+                this.props.textEditTarget);
+            this.props.onChangeStrokeColor(newColor);
+        } else {
+            hasChanged = applyColorToSelection(
+                newColor,
+                this.props.fillColorIndex,
+                true /* isSolidGradient */,
+                false /* applyToStroke */,
+                this.props.textEditTarget);
+            this.props.onChangeFillColor(newColor);
+        }
+        if (hasChanged) this.props.onUpdateImage();
+    }
     setCanvas (canvas) {
         this.setState({canvas: canvas});
         this.canvas = canvas;
@@ -252,14 +278,14 @@ class PaintEditor extends React.Component {
     }
     onMouseUp () {
         if (this.props.isEyeDropping) {
-            const colorString = this.eyeDropper.colorString;
+            const color = this.eyeDropper.color;
             const callback = this.props.changeColorToEyeDropper;
 
             this.eyeDropper.remove();
             if (!this.eyeDropper.hideLoupe) {
                 // If not hide loupe, that means the click is inside the canvas,
                 // so apply the new color
-                callback(colorString);
+                callback(color);
             }
             if (this.props.previousTool) this.props.previousTool.activate();
             this.props.onDeactivateEyeDropper();
@@ -315,6 +341,7 @@ class PaintEditor extends React.Component {
                 imageFormat={this.props.imageFormat}
                 imageId={this.props.imageId}
                 isEyeDropping={this.props.isEyeDropping}
+                isStrokeColor={this.props.mode === Modes.LINE}
                 name={this.props.name}
                 rotationCenterX={this.props.rotationCenterX}
                 rotationCenterY={this.props.rotationCenterY}
@@ -323,6 +350,7 @@ class PaintEditor extends React.Component {
                 setTextArea={this.setTextArea}
                 textArea={this.state.textArea}
                 zoomLevelId={this.props.zoomLevelId}
+                onChangeColor={this.handleChangeColor}
                 onRedo={this.props.onRedo}
                 onSwitchToBitmap={this.props.handleSwitchToBitmap}
                 onSwitchToVector={this.props.handleSwitchToVector}
@@ -341,6 +369,7 @@ PaintEditor.propTypes = {
     changeColorToEyeDropper: PropTypes.func,
     changeMode: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
+    fillColorIndex: PropTypes.number.isRequired,
     format: PropTypes.oneOf(Object.keys(Formats)), // Internal, up-to-date data format
     fontInlineFn: PropTypes.func,
     handleSwitchToBitmap: PropTypes.func.isRequired,
@@ -354,6 +383,8 @@ PaintEditor.propTypes = {
     isEyeDropping: PropTypes.bool,
     mode: PropTypes.oneOf(Object.keys(Modes)).isRequired,
     name: PropTypes.string,
+    onChangeFillColor: PropTypes.func.isRequired,
+    onChangeStrokeColor: PropTypes.func.isRequired,
     onDeactivateEyeDropper: PropTypes.func.isRequired,
     onKeyPress: PropTypes.func.isRequired,
     onRedo: PropTypes.func.isRequired,
@@ -372,6 +403,8 @@ PaintEditor.propTypes = {
     setSelectedItems: PropTypes.func.isRequired,
     shouldShowRedo: PropTypes.func.isRequired,
     shouldShowUndo: PropTypes.func.isRequired,
+    strokeColorIndex: PropTypes.number.isRequired,
+    textEditTarget: PropTypes.number,
     updateViewBounds: PropTypes.func.isRequired,
     viewBounds: PropTypes.instanceOf(paper.Matrix).isRequired,
     zoomLevelId: PropTypes.string
@@ -379,10 +412,13 @@ PaintEditor.propTypes = {
 
 const mapStateToProps = state => ({
     changeColorToEyeDropper: state.scratchPaint.color.eyeDropper.callback,
+    fillColorIndex: state.scratchPaint.color.fillColor.activeIndex,
     format: state.scratchPaint.format,
     isEyeDropping: state.scratchPaint.color.eyeDropper.active,
     mode: state.scratchPaint.mode,
     previousTool: state.scratchPaint.color.eyeDropper.previousTool,
+    strokeColorIndex: state.scratchPaint.color.strokeColor.activeIndex,
+    textEditTarget: state.scratchPaint.textEditTarget,
     viewBounds: state.scratchPaint.viewBounds
 });
 const mapDispatchToProps = dispatch => ({
@@ -406,6 +442,14 @@ const mapDispatchToProps = dispatch => ({
     },
     setSelectedItems: format => {
         dispatch(setSelectedItems(getSelectedLeafItems(), isBitmap(format)));
+    },
+    onChangeFillColor: fillColor => {
+        dispatch(clearFillGradient());
+        dispatch(changeFillColor(fillColor));
+    },
+    onChangeStrokeColor: strokeColor => {
+        dispatch(clearStrokeGradient());
+        dispatch(changeStrokeColor(strokeColor));
     },
     onDeactivateEyeDropper: () => {
         // set redux values to default for eye dropper reducer

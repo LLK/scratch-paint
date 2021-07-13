@@ -32,6 +32,7 @@ import ReshapeMode from '../../containers/reshape-mode.jsx';
 import SelectMode from '../../containers/select-mode.jsx';
 import StrokeColorIndicatorComponent from '../../containers/stroke-color-indicator.jsx';
 import StrokeWidthIndicatorComponent from '../../containers/stroke-width-indicator.jsx';
+import Swatches from '../../containers/swatches.jsx';
 import TextMode from '../../containers/text-mode.jsx';
 
 import Formats, {isBitmap, isVector} from '../../lib/format';
@@ -259,44 +260,52 @@ const PaintEditorComponent = props => (
                                 </span>
                             </Button> : null
                     }
-                    {/* Zoom controls */}
-                    <InputGroup className={styles.zoomControls}>
-                        <ButtonGroup>
-                            <Button
-                                className={styles.buttonGroupButton}
-                                onClick={props.onZoomOut}
-                            >
-                                <img
-                                    alt="Zoom Out"
-                                    className={styles.buttonGroupButtonIcon}
-                                    draggable={false}
-                                    src={zoomOutIcon}
-                                />
-                            </Button>
-                            <Button
-                                className={styles.buttonGroupButton}
-                                onClick={props.onZoomReset}
-                            >
-                                <img
-                                    alt="Zoom Reset"
-                                    className={styles.buttonGroupButtonIcon}
-                                    draggable={false}
-                                    src={zoomResetIcon}
-                                />
-                            </Button>
-                            <Button
-                                className={styles.buttonGroupButton}
-                                onClick={props.onZoomIn}
-                            >
-                                <img
-                                    alt="Zoom In"
-                                    className={styles.buttonGroupButtonIcon}
-                                    draggable={false}
-                                    src={zoomInIcon}
-                                />
-                            </Button>
-                        </ButtonGroup>
-                    </InputGroup>
+                    <div className={styles.row}>
+                        <Swatches
+                            small
+                            isStrokeColor={props.isStrokeColor}
+                            containerStyle={styles.colorSwatchesContainer}
+                            onChangeColor={props.onChangeColor}
+                        />
+                        {/* Zoom controls */}
+                        <InputGroup className={styles.zoomControls}>
+                            <ButtonGroup>
+                                <Button
+                                    className={styles.buttonGroupButton}
+                                    onClick={props.onZoomOut}
+                                >
+                                    <img
+                                        alt="Zoom Out"
+                                        className={styles.buttonGroupButtonIcon}
+                                        draggable={false}
+                                        src={zoomOutIcon}
+                                    />
+                                </Button>
+                                <Button
+                                    className={styles.buttonGroupButton}
+                                    onClick={props.onZoomReset}
+                                >
+                                    <img
+                                        alt="Zoom Reset"
+                                        className={styles.buttonGroupButtonIcon}
+                                        draggable={false}
+                                        src={zoomResetIcon}
+                                    />
+                                </Button>
+                                <Button
+                                    className={styles.buttonGroupButton}
+                                    onClick={props.onZoomIn}
+                                >
+                                    <img
+                                        alt="Zoom In"
+                                        className={styles.buttonGroupButtonIcon}
+                                        draggable={false}
+                                        src={zoomInIcon}
+                                    />
+                                </Button>
+                            </ButtonGroup>
+                        </InputGroup>
+                    </div>
                 </div>
             </div>
         </div>
@@ -317,7 +326,9 @@ PaintEditorComponent.propTypes = {
     imageId: PropTypes.string,
     intl: intlShape,
     isEyeDropping: PropTypes.bool,
+    isStrokeColor: PropTypes.bool.isRequired,
     name: PropTypes.string,
+    onChangeColor: PropTypes.func.isRequired,
     onRedo: PropTypes.func.isRequired,
     onSwitchToBitmap: PropTypes.func.isRequired,
     onSwitchToVector: PropTypes.func.isRequired,

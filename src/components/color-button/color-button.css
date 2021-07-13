@@ -53,7 +53,7 @@
 }
 
 .swatch-icon {
-    width: 1.75rem;
+    width: 1.5rem;
     margin: auto;
     /* Make sure it appears above the outline box */
     z-index: 2;

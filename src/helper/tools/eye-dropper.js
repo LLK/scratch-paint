@@ -43,7 +43,7 @@ class EyeDropperTool extends paper.Tool {
         this.width = width * this.zoom * this.pixelRatio;
         this.height = height * this.zoom * this.pixelRatio;
         this.rect = canvas.getBoundingClientRect();
-        this.colorString = '';
+        this.color = null;
         this.pickX = -1;
         this.pickY = -1;
         this.hideLoupe = true;
@@ -71,20 +71,20 @@ class EyeDropperTool extends paper.Tool {
             if (!colorInfo) return;
             if (colorInfo.color[3] === 0) {
                 // Alpha 0
-                this.colorString = null;
+                this.color = null;
                 return;
             }
-            const r = colorInfo.color[0];
-            const g = colorInfo.color[1];
-            const b = colorInfo.color[2];
 
-            // from https://github.com/LLK/scratch-gui/blob/77e54a80a31b6cd4684d4b2a70f1aeec671f229e/src/containers/stage.jsx#L218-L222
-            // formats the color info from the canvas into hex for parsing by the color picker
-            const componentToString = c => {
-                const hex = c.toString(16);
-                return hex.length === 1 ? `0${hex}` : hex;
-            };
-            this.colorString = `#${componentToString(r)}${componentToString(g)}${componentToString(b)}`;
+            const color = new paper.Color(
+                colorInfo.color[0] / 255,
+                colorInfo.color[1] / 255,
+                colorInfo.color[2] / 255
+            );
+
+            // Convert color's backing components to HSV a.k.a. HSB
+            color.type = 'hsb';
+
+            this.color = color;
         }
     }
     getColorInfo (x, y, hideLoupe) {

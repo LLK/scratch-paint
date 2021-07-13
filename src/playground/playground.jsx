@@ -47,7 +47,7 @@ class Playground extends React.Component {
             rotationCenterY: 400,
             imageFormat: 'svg', // 'svg', 'png', or 'jpg'
             image: svgString, // svg string or data URI
-            imageId: this.id, // If this changes, the paint editor will reload
+            imageId: '' + this.id, // If this changes, the paint editor will reload
             rtl: rtl,
         };
         this.reusableCanvas = document.createElement('canvas');
@@ -159,7 +159,7 @@ class Playground extends React.Component {
             that.setState({
                 image: content,
                 name: file.name.split('.').slice(0, -1).join('.'),
-                imageId: ++that.id,
+                imageId: '' + (++that.id),
                 imageFormat: type,
                 rotationCenterX: undefined,
                 rotationCenterY: undefined,

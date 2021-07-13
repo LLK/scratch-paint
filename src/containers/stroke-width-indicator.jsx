@@ -2,8 +2,7 @@ import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import React from 'react';
 import bindAll from 'lodash.bindall';
-import parseColor from 'parse-color';
-import {changeStrokeColor, changeStrokeColor2, changeStrokeGradientType} from '../reducers/stroke-style';
+import {changeStrokeColor, changeStrokeColor2, changeStrokeGradientType, DEFAULT_COLOR} from '../reducers/stroke-style';
 import {changeStrokeWidth} from '../reducers/stroke-width';
 import StrokeWidthIndicatorComponent from '../components/stroke-width-indicator.jsx';
 import {getSelectedLeafItems} from '../helper/selection';
@@ -33,7 +32,7 @@ class StrokeWidthIndicator extends React.Component {
 
             if (wasNull) {
                 changed = applyColorToSelection(
-                    '#000',
+                    DEFAULT_COLOR,
                     0, // colorIndex,
                     true, // isSolidGradient
                     true, // applyToStroke
@@ -41,12 +40,12 @@ class StrokeWidthIndicator extends React.Component {
                     changed;
                 // If there's no previous stroke color, default to solid black
                 this.props.onChangeStrokeGradientType(GradientTypes.SOLID);
-                this.props.onChangeStrokeColor('#000');
+                this.props.onChangeStrokeColor(DEFAULT_COLOR);
             } else if (currentColorState.strokeColor !== MIXED) {
                 // Set color state from the selected item's stroke color
                 this.props.onChangeStrokeGradientType(currentColorState.strokeGradientType);
-                this.props.onChangeStrokeColor(parseColor(currentColorState.strokeColor).hex);
-                this.props.onChangeStrokeColor2(parseColor(currentColorState.strokeColor2).hex);
+                this.props.onChangeStrokeColor(currentColorState.strokeColor);
+                this.props.onChangeStrokeColor2(currentColorState.strokeColor2);
             }
         }
         this.props.onChangeStrokeWidth(newWidth);

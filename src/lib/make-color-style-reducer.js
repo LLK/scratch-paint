@@ -2,13 +2,11 @@ import log from '../log/log';
 import {CHANGE_SELECTED_ITEMS} from '../reducers/selected-items';
 import {getColorsFromSelection, MIXED} from '../helper/style-path';
 import GradientTypes from './gradient-types';
+import paper from '@scratch/paper';
 
-// Matches hex colors
-const hexRegex = /^#([0-9a-f]{3}){1,2}$/i;
-
-const isValidHexColor = color => {
-    if (!hexRegex.test(color) && color !== null && color !== MIXED) {
-        log.warn(`Invalid hex color code: ${color}`);
+const isValidColor = color => {
+    if (!(color instanceof paper.Color) && color !== null && color !== MIXED) {
+        log.warn(`Invalid color: ${color}`);
         return false;
     }
     return true;
@@ -23,6 +21,8 @@ const makeColorStyleReducer = ({
     changeGradientTypeAction,
     // Action name for clearing the gradient
     clearGradientAction,
+    // Action for changing which of the primary and secondary colors is currently 'active' to change.
+    changeIndexAction,
     // Initial color when not set
     defaultColor,
     // The name of the property read from getColorsFromSelection to get the primary color.
@@ -39,15 +39,16 @@ const makeColorStyleReducer = ({
         state = {
             primary: defaultColor,
             secondary: null,
-            gradientType: GradientTypes.SOLID
+            gradientType: GradientTypes.SOLID,
+            activeIndex: 0
         };
     }
     switch (action.type) {
     case changePrimaryColorAction:
-        if (!isValidHexColor(action.color)) return state;
+        if (!isValidColor(action.color)) return state;
         return {...state, primary: action.color};
     case changeSecondaryColorAction:
-        if (!isValidHexColor(action.color)) return state;
+        if (!isValidColor(action.color)) return state;
         return {...state, secondary: action.color};
     case CHANGE_SELECTED_ITEMS: {
         // Don't change state if no selection
@@ -79,17 +80,28 @@ const makeColorStyleReducer = ({
         }
         return newState;
     }
+    case changeIndexAction:
+        if (action.index !== 1 && action.index !== 0) {
+            log.warn(`Invalid color index: ${action.index}`);
+            return state;
+        }
+        return {...state, activeIndex: action.index};
     case changeGradientTypeAction:
         if (action.gradientType in GradientTypes) {
-            return {...state, gradientType: action.gradientType};
+            const newState = {...state, gradientType: action.gradientType};
+            if (action.gradientType === GradientTypes.SOLID) newState.activeIndex = 0;
+            return newState;
         }
         log.warn(`Gradient type does not exist: ${action.gradientType}`);
         return state;
     case clearGradientAction:
-        return {...state, secondary: null, gradientType: GradientTypes.SOLID};
+        return {...state, secondary: null, gradientType: GradientTypes.SOLID, activeIndex: 0};
     default:
         return state;
     }
 };
 
-export default makeColorStyleReducer;
+export {
+    makeColorStyleReducer as default,
+    isValidColor
+};

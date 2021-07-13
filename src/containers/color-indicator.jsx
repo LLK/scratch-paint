@@ -1,20 +1,19 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import bindAll from 'lodash.bindall';
-import parseColor from 'parse-color';
 import {injectIntl, intlShape} from 'react-intl';
 
 import {getSelectedLeafItems} from '../helper/selection';
 import Formats, {isBitmap} from '../lib/format';
 import GradientTypes from '../lib/gradient-types';
+import ColorProptype from '../lib/color-proptype';
 
 import ColorIndicatorComponent from '../components/color-indicator.jsx';
 import {applyColorToSelection,
     applyGradientTypeToSelection,
     applyStrokeWidthToSelection,
     generateSecondaryColor,
-    swapColorsInSelection,
-    MIXED} from '../helper/style-path';
+    swapColorsInSelection} from '../helper/style-path';
 
 const makeColorIndicator = (label, isStroke) => {
     class ColorIndicator extends React.Component {
@@ -122,12 +121,8 @@ const makeColorIndicator = (label, isStroke) => {
                 this.props.setSelectedItems(this.props.format);
                 this._hasChanged = this._hasChanged || isDifferent;
             } else {
-                let color1 = this.props.color;
-                let color2 = this.props.color2;
-                color1 = color1 === null || color1 === MIXED ? color1 : parseColor(color1).hex;
-                color2 = color2 === null || color2 === MIXED ? color2 : parseColor(color2).hex;
-                this.props.onChangeColor(color1, 1);
-                this.props.onChangeColor(color2, 0);
+                this.props.onChangeColor(this.props.color, 1);
+                this.props.onChangeColor(this.props.color2, 0);
             }
         }
         render () {
@@ -148,8 +143,8 @@ const makeColorIndicator = (label, isStroke) => {
     ColorIndicator.propTypes = {
         colorIndex: PropTypes.number.isRequired,
         disabled: PropTypes.bool.isRequired,
-        color: PropTypes.string,
-        color2: PropTypes.string,
+        color: ColorProptype,
+        color2: ColorProptype,
         colorModalVisible: PropTypes.bool.isRequired,
         fillBitmapShapes: PropTypes.bool.isRequired,
         format: PropTypes.oneOf(Object.keys(Formats)),

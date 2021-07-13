@@ -3,15 +3,15 @@ import PropTypes from 'prop-types';
 import {defineMessages, FormattedMessage, injectIntl, intlShape} from 'react-intl';
 
 import classNames from 'classnames';
-import parseColor from 'parse-color';
 
 import Slider, {CONTAINER_WIDTH, HANDLE_WIDTH} from '../forms/slider.jsx';
 import LabeledIconButton from '../labeled-icon-button/labeled-icon-button.jsx';
 import styles from './color-picker.css';
+import swatchStyles from '../swatches/swatches.css';
 import GradientTypes from '../../lib/gradient-types';
+import Swatches from '../../containers/swatches.jsx';
 import {MIXED} from '../../helper/style-path';
 
-import eyeDropperIcon from './icons/eye-dropper.svg';
 import noFillIcon from '../color-button/no-fill.svg';
 import mixedFillIcon from '../color-button/mixed-fill.svg';
 import fillHorzGradientIcon from './icons/fill-horz-gradient-enabled.svg';
@@ -19,12 +19,23 @@ import fillRadialIcon from './icons/fill-radial-enabled.svg';
 import fillSolidIcon from './icons/fill-solid-enabled.svg';
 import fillVertGradientIcon from './icons/fill-vert-gradient-enabled.svg';
 import swapIcon from './icons/swap.svg';
-import Modes from '../../lib/modes';
+import ColorProptype from '../../lib/color-proptype';
 
-const hsvToHex = (h, s, v) =>
-    // Scale hue back up to [0, 360] from [0, 100]
-    parseColor(`hsv(${3.6 * h}, ${s}, ${v})`).hex
-;
+/**
+ * Converts the color picker's internal color representation (HSV 0-100) into a CSS color string.
+ * @param {number} h Hue, from 0 to 100.
+ * @param {number} s Saturation, from 0 to 100.
+ * @param {number} v Value, from 0 to 100.
+ * @returns {string} A valid CSS color string representing the input HSV color.
+ */
+const hsvToCssString = (h, s, v) => {
+    const scaledValue = v * 0.01;
+    const hslLightness = scaledValue - ((scaledValue * (s * 0.01)) / 2);
+    const m = Math.min(hslLightness, 1 - hslLightness);
+    const hslSaturation = (m === 0) ? 0 : (scaledValue - hslLightness) / m;
+
+    return `hsl(${h * 3.6}, ${hslSaturation * 100}%, ${hslLightness * 100}%)`;
+};
 
 const messages = defineMessages({
     swap: {
@@ -33,6 +44,7 @@ const messages = defineMessages({
         id: 'paint.colorPicker.swap'
     }
 });
+
 class ColorPickerComponent extends React.Component {
     _makeBackground (channel) {
         const stops = [];
@@ -41,13 +53,13 @@ class ColorPickerComponent extends React.Component {
         for (let n = 100; n >= 0; n -= 10) {
             switch (channel) {
             case 'hue':
-                stops.push(hsvToHex(n, this.props.saturation, this.props.brightness));
+                stops.push(hsvToCssString(n, this.props.saturation, this.props.brightness));
                 break;
             case 'saturation':
-                stops.push(hsvToHex(this.props.hue, n, this.props.brightness));
+                stops.push(hsvToCssString(this.props.hue, n, this.props.brightness));
                 break;
             case 'brightness':
-                stops.push(hsvToHex(this.props.hue, this.props.saturation, n));
+                stops.push(hsvToCssString(this.props.hue, this.props.saturation, n));
                 break;
             default:
                 throw new Error(`Unknown channel for color sliders: ${channel}`);
@@ -126,13 +138,12 @@ class ColorPickerComponent extends React.Component {
                                     <div
                                         className={classNames({
                                             [styles.clickable]: true,
-                                            [styles.swatch]: true,
                                             [styles.largeSwatch]: true,
-                                            [styles.activeSwatch]: this.props.colorIndex === 0
+                                            [swatchStyles.activeSwatch]: this.props.colorIndex === 0
                                         })}
                                         style={{
                                             backgroundColor: this.props.color === null || this.props.color === MIXED ?
-                                                'white' : this.props.color
+                                                'white' : this.props.color.toCSS()
                                         }}
                                         onClick={this.props.onSelectColor}
                                     >
@@ -159,13 +170,12 @@ class ColorPickerComponent extends React.Component {
                                     <div
                                         className={classNames({
                                             [styles.clickable]: true,
-                                            [styles.swatch]: true,
                                             [styles.largeSwatch]: true,
-                                            [styles.activeSwatch]: this.props.colorIndex === 1
+                                            [swatchStyles.activeSwatch]: this.props.colorIndex === 1
                                         })}
                                         style={{
                                             backgroundColor: this.props.color2 === null || this.props.color2 === MIXED ?
-                                                'white' : this.props.color2
+                                                'white' : this.props.color2.toCSS()
                                         }}
                                         onClick={this.props.onSelectColor2}
                                     >
@@ -188,6 +198,11 @@ class ColorPickerComponent extends React.Component {
                         )}
                     </div>
                 ) : null}
+                <Swatches
+                    isStrokeColor={this.props.isStrokeColor}
+                    containerStyle={styles.colorSwatchesContainer}
+                    onChangeColor={this.props.onChangeColor}
+                />
                 <div className={styles.row}>
                     <div className={styles.rowHeader}>
                         <span className={styles.labelName}>
@@ -245,52 +260,10 @@ class ColorPickerComponent extends React.Component {
                     </div>
                     <div className={styles.rowSlider}>
                         <Slider
-                            lastSlider
                             background={this._makeBackground('brightness')}
                             value={this.props.brightness}
                             onChange={this.props.onBrightnessChange}
                         />
-                    </div>
-                </div>
-                <div className={styles.swatchRow}>
-                    <div className={styles.swatches}>
-                        {this.props.mode === Modes.BIT_LINE ||
-                            this.props.mode === Modes.BIT_RECT ||
-                            this.props.mode === Modes.BIT_OVAL ||
-                            this.props.mode === Modes.BIT_TEXT ? null :
-                            (<div
-                                className={classNames({
-                                    [styles.clickable]: true,
-                                    [styles.swatch]: true,
-                                    [styles.activeSwatch]:
-                                        (this.props.colorIndex === 0 && this.props.color === null) ||
-                                        (this.props.colorIndex === 1 && this.props.color2 === null)
-                                })}
-                                onClick={this.props.onTransparent}
-                            >
-                                <img
-                                    className={styles.swatchIcon}
-                                    draggable={false}
-                                    src={noFillIcon}
-                                />
-                            </div>)
-                        }
-                    </div>
-                    <div className={styles.swatches}>
-                        <div
-                            className={classNames({
-                                [styles.clickable]: true,
-                                [styles.swatch]: true,
-                                [styles.activeSwatch]: this.props.isEyeDropping
-                            })}
-                            onClick={this.props.onActivateEyeDropper}
-                        >
-                            <img
-                                className={styles.swatchIcon}
-                                draggable={false}
-                                src={eyeDropperIcon}
-                            />
-                        </div>
                     </div>
                 </div>
             </div>
@@ -300,16 +273,15 @@ class ColorPickerComponent extends React.Component {
 
 ColorPickerComponent.propTypes = {
     brightness: PropTypes.number.isRequired,
-    color: PropTypes.string,
-    color2: PropTypes.string,
+    color: ColorProptype,
+    color2: ColorProptype,
     colorIndex: PropTypes.number.isRequired,
     gradientType: PropTypes.oneOf(Object.keys(GradientTypes)).isRequired,
     hue: PropTypes.number.isRequired,
     intl: intlShape.isRequired,
-    isEyeDropping: PropTypes.bool.isRequired,
-    mode: PropTypes.oneOf(Object.keys(Modes)),
-    onActivateEyeDropper: PropTypes.func.isRequired,
+    isStrokeColor: PropTypes.bool.isRequired,
     onBrightnessChange: PropTypes.func.isRequired,
+    onChangeColor: PropTypes.func.isRequired,
     onChangeGradientTypeHorizontal: PropTypes.func.isRequired,
     onChangeGradientTypeRadial: PropTypes.func.isRequired,
     onChangeGradientTypeSolid: PropTypes.func.isRequired,
@@ -319,7 +291,6 @@ ColorPickerComponent.propTypes = {
     onSelectColor: PropTypes.func.isRequired,
     onSelectColor2: PropTypes.func.isRequired,
     onSwap: PropTypes.func,
-    onTransparent: PropTypes.func.isRequired,
     rtl: PropTypes.bool.isRequired,
     saturation: PropTypes.number.isRequired,
     shouldShowGradientTools: PropTypes.bool.isRequired

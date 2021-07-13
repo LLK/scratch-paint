@@ -6,7 +6,7 @@ import {getEventXY} from '../../lib/touch-utils';
 
 import styles from './slider.css';
 
-const CONTAINER_WIDTH = 150;
+const CONTAINER_WIDTH = 212;
 const HANDLE_WIDTH = 26;
 
 class SliderComponent extends React.Component {
@@ -80,8 +80,7 @@ class SliderComponent extends React.Component {
         return (
             <div
                 className={classNames({
-                    [styles.container]: true,
-                    [styles.last]: this.props.lastSlider
+                    [styles.container]: true
                 })}
                 ref={this.setBackground}
                 style={{
@@ -105,7 +104,6 @@ class SliderComponent extends React.Component {
 
 SliderComponent.propTypes = {
     background: PropTypes.string,
-    lastSlider: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
     value: PropTypes.number.isRequired
 };

@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import {connect} from 'react-redux';
+import ColorProptype from '../lib/color-proptype';
 import bindAll from 'lodash.bindall';
 import Modes from '../lib/modes';
 import {MIXED} from '../helper/style-path';
@@ -84,7 +85,7 @@ BitBrushMode.propTypes = {
     bitBrushSize: PropTypes.number.isRequired,
     clearGradient: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
-    color: PropTypes.string,
+    color: ColorProptype,
     handleMouseDown: PropTypes.func.isRequired,
     isBitBrushModeActive: PropTypes.bool.isRequired,
     onChangeFillColor: PropTypes.func.isRequired,
